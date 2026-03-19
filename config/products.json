@@ -1,0 +1,74 @@
+{
+  "products": [
+    {
+      "id": "ezbillify-web",
+      "name": "EZBillify V2 Web",
+      "type": "nextjs",
+      "category": "GST billing software",
+      "repo": "https://github.com/ezbillify/ezbillify-v2.git",
+      "branch": "main",
+      "version_file": "package.json",
+      "test_url": "http://localhost:3000",
+      "test_credentials": {
+        "email": "test@ezbillify.com",
+        "password": "TEST_PASSWORD_HERE"
+      },
+      "key_flows": [
+        "login",
+        "sales/invoices",
+        "purchase/bills",
+        "inventory/items",
+        "settings/gst",
+        "sales/customers"
+      ],
+      "active": true
+    },
+    {
+      "id": "ezbillify-app",
+      "name": "EZBillify V2 App",
+      "type": "flutter",
+      "category": "GST billing software",
+      "repo": "https://github.com/ezbillify/EZBillifyV2App.git",
+      "branch": "main",
+      "version_file": "pubspec.yaml",
+      "app_id": "com.ezbillify.app",
+      "platform": "android",
+      "test_credentials": {
+        "email": "test@ezbillify.com",
+        "password": "TEST_PASSWORD_HERE"
+      },
+      "active": true
+    },
+    {
+      "id": "ezdine-web",
+      "name": "EZ-Dine Web",
+      "type": "nextjs",
+      "category": "restaurant POS software",
+      "repo": "https://github.com/ezbillify/EZDine.git",
+      "branch": "main",
+      "version_file": "package.json",
+      "test_url": "http://localhost:3001",
+      "test_credentials": {
+        "email": "test@ezdine.com",
+        "password": "TEST_PASSWORD_HERE"
+      },
+      "active": true
+    },
+    {
+      "id": "ezdine-app",
+      "name": "EZ-Dine App",
+      "type": "flutter",
+      "category": "restaurant POS software",
+      "repo": "https://github.com/ezbillify/EZDine.git",
+      "branch": "main",
+      "version_file": "pubspec.yaml",
+      "app_id": "com.ezdine.app",
+      "platform": "android",
+      "test_credentials": {
+        "email": "test@ezdine.com",
+        "password": "TEST_PASSWORD_HERE"
+      },
+      "active": true
+    }
+  ]
+}

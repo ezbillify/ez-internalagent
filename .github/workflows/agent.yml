@@ -1,0 +1,101 @@
+name: EZ Agent — QA Trigger
+
+on:
+  push:
+    branches: [main, develop, staging]
+  workflow_dispatch:
+    inputs:
+      product_id:
+        description: 'Product ID to test'
+        required: true
+        default: 'ezbillify-web'
+      agent:
+        description: 'Agent to run'
+        required: true
+        default: 'qa'
+        type: choice
+        options:
+          - qa
+          - research
+          - leads
+
+jobs:
+  trigger-agent:
+    runs-on: self-hosted  # ← runs on your Mac Mini
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r python/requirements.txt
+
+      - name: Detect changed product
+        id: detect
+        run: |
+          # Auto-detect which product repo triggered this
+          REPO_NAME="${{ github.repository }}"
+          if [[ "$REPO_NAME" == *"ezbillify-v2"* ]]; then
+            echo "product=ezbillify-web" >> $GITHUB_OUTPUT
+          elif [[ "$REPO_NAME" == *"EZBillifyV2App"* ]]; then
+            echo "product=ezbillify-app" >> $GITHUB_OUTPUT
+          elif [[ "$REPO_NAME" == *"EZDine"* ]]; then
+            echo "product=ezdine-web" >> $GITHUB_OUTPUT
+          else
+            echo "product=${{ github.event.inputs.product_id || 'ezbillify-web' }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run QA Agent
+        if: ${{ github.event.inputs.agent == 'qa' || github.event_name == 'push' }}
+        env:
+          OLLAMA_URL: ${{ secrets.OLLAMA_URL }}
+          OLLAMA_MODEL: ${{ secrets.OLLAMA_MODEL }}
+          GITHUB_AGENT_TOKEN: ${{ secrets.AGENT_GITHUB_TOKEN }}
+          EZCONNECT_URL: ${{ secrets.EZCONNECT_URL }}
+          EZCONNECT_API_KEY: ${{ secrets.EZCONNECT_API_KEY }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          python python/agent.py qa \
+            --product ${{ steps.detect.outputs.product }} \
+            --commit ${{ github.sha }} \
+            --branch ${{ github.ref_name }}
+
+      - name: Run Research Agent
+        if: ${{ github.event.inputs.agent == 'research' }}
+        env:
+          OLLAMA_URL: ${{ secrets.OLLAMA_URL }}
+          EZCONNECT_URL: ${{ secrets.EZCONNECT_URL }}
+          EZCONNECT_API_KEY: ${{ secrets.EZCONNECT_API_KEY }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
+        run: |
+          python python/agent.py research \
+            --product ${{ github.event.inputs.product_id }}
+
+      - name: Run Lead Gen Agent
+        if: ${{ github.event.inputs.agent == 'leads' }}
+        env:
+          OLLAMA_URL: ${{ secrets.OLLAMA_URL }}
+          EZCONNECT_URL: ${{ secrets.EZCONNECT_URL }}
+          EZCONNECT_API_KEY: ${{ secrets.EZCONNECT_API_KEY }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+        run: |
+          python python/agent.py leads
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ github.sha }}
+          path: /tmp/ez-agent-tests/
+          retention-days: 7
