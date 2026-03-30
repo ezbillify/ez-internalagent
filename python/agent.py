@@ -10,7 +10,12 @@ import json
 import subprocess
 import requests
 import argparse
+import tempfile
 from datetime import datetime
+from dotenv import load_dotenv
+
+# Load .env from root
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"), override=True)
 from utils.diff_parser import parse_diff, detect_platforms
 from utils.test_generator import generate_maestro_flows, generate_playwright_tests
 from utils.maestro_runner import run_maestro
@@ -21,8 +26,42 @@ from utils.product_registry import load_products, get_product
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5-coder:7b")
+STATUS_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "dashboard", "data", "live_status.json")
+
+def update_live_status(agent_id, status=None, task=None, increment_metric=None):
+    if not os.path.exists(STATUS_FILE): return
+    try:
+        with open(STATUS_FILE, "r") as f:
+            data = json.load(f)
+        
+        # Update agent status
+        for agent in data.get("agents", []):
+            if agent["id"] == agent_id:
+                if status: agent["status"] = status
+                if task: agent["current_task"] = task
+                if status == "running": agent["last_run"] = datetime.utcnow().isoformat()
+        
+        # Add a log entry
+        if task:
+            log_entry = {
+                "time": datetime.now().strftime("%H:%M:%S"),
+                "type": "info" if status != "error" else "err",
+                "text": f"{agent_id.upper()} Agent: {task}"
+            }
+            data.setdefault("logs", []).insert(0, log_entry)
+            data["logs"] = data["logs"][:50] # Keep last 50
+            
+        # Increment metrics
+        if increment_metric:
+            data.setdefault("metrics", {})[increment_metric] = data["metrics"].get(increment_metric, 0) + 1
+            
+        with open(STATUS_FILE, "w") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        print(f"⚠️ Failed to update live status: {e}")
 
 def run_qa_agent(product_id: str, commit_sha: str, branch: str):
+    update_live_status("qa", status="running", task=f"Initializing {product_id} @ {commit_sha[:8]}")
     print(f"\n🤖 EZ QA Agent starting — {product_id} @ {commit_sha[:8]}")
     
     product = get_product(product_id)
@@ -31,6 +70,7 @@ def run_qa_agent(product_id: str, commit_sha: str, branch: str):
         sys.exit(1)
 
     # Step 1: Get git diff
+    update_live_status("qa", task=f"Fetching repository and git diff...")
     print("📂 Reading git diff...")
     repo_path = clone_or_pull_repo(product)
     diff = get_git_diff(repo_path, commit_sha)
@@ -70,10 +110,13 @@ def run_qa_agent(product_id: str, commit_sha: str, branch: str):
             results.append({"platform": "nextjs", "results": playwright_results})
 
     # Step 5: Process results
+    update_live_status("qa", task=f"Syncing results to EZ-Connect...")
     process_results(results, product, commit_sha, branch)
+    update_live_status("qa", status="idle", task=f"Test run complete", increment_metric="tests_run")
 
 
 def run_research_agent(product_id: str = None):
+    update_live_status("research", status="running", task="Starting market analysis...")
     print(f"\n🔬 EZ Research Agent starting...")
     from agents.research_agent import ResearchAgent
     agent = ResearchAgent(OLLAMA_URL, OLLAMA_MODEL)
@@ -99,20 +142,26 @@ def run_research_agent(product_id: str = None):
             color="purple"
         )
     
+    update_live_status("research", status="idle", task="Analysis complete")
     print("\n✅ Research agent complete")
 
 
-def run_lead_gen_agent():
+def run_lead_gen_agent(product_id: str = None):
+    update_live_status("leads", status="running", task="Scraping new lead data...")
     print(f"\n🎯 EZ Lead Gen Agent starting...")
     from agents.lead_gen_agent import LeadGenAgent
     agent = LeadGenAgent(OLLAMA_URL, OLLAMA_MODEL)
-    leads = agent.run()
+    
+    products = load_products()
+    targets = [get_product(product_id)] if product_id else products
+    leads = agent.run(targets)
     
     send_discord_message(
         title="Lead Gen Report",
         body=f"Found {len(leads)} new leads → pushed to EZ-Connect CRM",
         color="amber"
     )
+    update_live_status("leads", status="idle", task=f"Found {len(leads)} leads", increment_metric="leads_generated")
     print(f"\n✅ Lead gen complete — {len(leads)} leads")
 
 
@@ -125,7 +174,7 @@ def clone_or_pull_repo(product: dict) -> str:
         repo_url = repo_url.replace("https://", f"https://ez-agent-bot:{token}@")
     
     repo_name = product["id"]
-    repo_path = f"/tmp/ez-agent-repos/{repo_name}"
+    repo_path = os.path.join(tempfile.gettempdir(), "ez-agent-repos", repo_name)
     
     if os.path.exists(repo_path):
         subprocess.run(["git", "-C", repo_path, "pull"], capture_output=True)
@@ -145,18 +194,18 @@ def get_git_diff(repo_path: str, commit_sha: str) -> str:
 
 
 def save_flows(flows: list, product_id: str, repo_path: str):
-    flows_dir = f"/tmp/ez-agent-tests/{product_id}/maestro"
+    flows_dir = os.path.join(tempfile.gettempdir(), "ez-agent-tests", product_id, "maestro")
     os.makedirs(flows_dir, exist_ok=True)
     for i, flow in enumerate(flows):
-        with open(f"{flows_dir}/flow_{i+1}.yaml", "w") as f:
+        with open(os.path.join(flows_dir, f"flow_{i+1}.yaml"), "w") as f:
             f.write(flow)
 
 
 def save_tests(tests: list, product_id: str, repo_path: str):
-    tests_dir = f"/tmp/ez-agent-tests/{product_id}/playwright"
+    tests_dir = os.path.join(tempfile.gettempdir(), "ez-agent-tests", product_id, "playwright")
     os.makedirs(tests_dir, exist_ok=True)
     for i, test in enumerate(tests):
-        with open(f"{tests_dir}/test_{i+1}.spec.ts", "w") as f:
+        with open(os.path.join(tests_dir, f"test_{i+1}.spec.ts"), "w") as f:
             f.write(test)
 
 
@@ -224,4 +273,4 @@ if __name__ == "__main__":
     elif args.agent == "research":
         run_research_agent(args.product)
     elif args.agent == "leads":
-        run_lead_gen_agent()
+        run_lead_gen_agent(args.product)

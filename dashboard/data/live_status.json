@@ -1,0 +1,303 @@
+{
+  "metrics": {
+    "tests_run": 0,
+    "bugs_filed": 0,
+    "leads_generated": 2,
+    "uptime": "100%"
+  },
+  "agents": [
+    {
+      "id": "qa",
+      "status": "idle",
+      "last_run": null,
+      "current_task": "Waiting for deployment..."
+    },
+    {
+      "id": "research",
+      "status": "idle",
+      "last_run": "2026-03-30T19:12:58.846591",
+      "current_task": "Research & Lead Gen Complete",
+      "progress": 100
+    },
+    {
+      "id": "leads",
+      "status": "idle",
+      "last_run": "2026-03-30T13:42:50.146992",
+      "current_task": "Scraping new lead data...",
+      "progress": 0
+    }
+  ],
+  "logs": [
+    {
+      "time": "00:46:26",
+      "type": "info",
+      "text": "RESEARCH: Research & Lead Gen Complete"
+    },
+    {
+      "time": "00:44:12",
+      "type": "info",
+      "text": "RESEARCH: Market analysis complete. Triggering lead gen..."
+    },
+    {
+      "time": "00:42:58",
+      "type": "info",
+      "text": "RESEARCH: Cloning and flattening repo..."
+    },
+    {
+      "time": "00:42:58",
+      "type": "info",
+      "text": "RESEARCH: Analyzing https://github.com/ezbillify/ezbillify-v2.git..."
+    },
+    {
+      "time": "00:39:41",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "00:39:40",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "00:39:40",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "00:39:40",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "00:39:39",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "00:39:14",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "00:27:55",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "00:16:01",
+      "type": "info",
+      "text": "RESEARCH: Research & Lead Gen Complete"
+    },
+    {
+      "time": "00:12:55",
+      "type": "info",
+      "text": "RESEARCH: Market analysis complete. Triggering lead gen..."
+    },
+    {
+      "time": "00:11:19",
+      "type": "info",
+      "text": "RESEARCH: Cloning and flattening repo..."
+    },
+    {
+      "time": "00:11:19",
+      "type": "info",
+      "text": "RESEARCH: Analyzing https://github.com/ezbillify/ez-internalagent.git..."
+    },
+    {
+      "time": "19:12:50",
+      "type": "info",
+      "text": "LEADS Agent: Scraping new lead data..."
+    },
+    {
+      "time": "18:13:18",
+      "type": "info",
+      "text": "LEADS Agent: Scraping new lead data..."
+    },
+    {
+      "time": "18:13:16",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "18:11:47",
+      "type": "info",
+      "text": "RESEARCH Agent: Analysis complete"
+    },
+    {
+      "time": "18:10:27",
+      "type": "info",
+      "text": "RESEARCH Agent: Analysis complete"
+    },
+    {
+      "time": "18:07:01",
+      "type": "info",
+      "text": "LEADS Agent: Scraping new lead data..."
+    },
+    {
+      "time": "18:02:34",
+      "type": "info",
+      "text": "RESEARCH Agent: Analysis complete"
+    },
+    {
+      "time": "18:01:11",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "18:00:29",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "17:59:14",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "17:56:51",
+      "type": "info",
+      "text": "RESEARCH Agent: Analysis complete"
+    },
+    {
+      "time": "17:56:29",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "17:54:27",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "17:54:26",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "17:54:26",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "17:54:26",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "17:51:05",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "16:50:25",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "16:50:25",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "16:44:49",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "16:38:42",
+      "type": "info",
+      "text": "LEADS Agent: Scraping new lead data..."
+    },
+    {
+      "time": "16:38:33",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "16:38:32",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "16:38:32",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "16:38:32",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "16:38:18",
+      "type": "info",
+      "text": "LEADS Agent: Scraping new lead data..."
+    },
+    {
+      "time": "16:38:02",
+      "type": "info",
+      "text": "LEADS Agent: Scraping new lead data..."
+    },
+    {
+      "time": "16:37:54",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "16:29:57",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "16:29:57",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "16:29:56",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "16:29:56",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "16:29:56",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "16:29:56",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "16:29:56",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "16:29:55",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "16:29:55",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "16:29:55",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    },
+    {
+      "time": "16:29:55",
+      "type": "info",
+      "text": "RESEARCH Agent: Starting market analysis..."
+    }
+  ],
+  "historical": []
+}

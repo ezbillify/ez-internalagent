@@ -1,11 +1,7 @@
-"""
-Lead Gen Agent
-Scrapes Bengaluru SMB leads and pushes to EZ-Connect CRM
-"""
-
 import os
 import json
 import requests
+import pandas as pd
 from datetime import datetime
 
 class LeadGenAgent:
@@ -16,38 +12,50 @@ class LeadGenAgent:
         self.ezconnect_url = os.getenv("EZCONNECT_URL", "http://localhost:3002")
         self.ezconnect_key = os.getenv("EZCONNECT_API_KEY", "")
     
-    def run(self) -> list:
-        print("  🌐 Scraping Google Maps for Bengaluru SMBs...")
-        raw_leads = self.scrape_google_maps()
+    def run(self, products: list) -> list:
+        from utils.telemetry import update_live_status
+        all_enriched = []
         
-        print(f"  🤖 Enriching {len(raw_leads)} leads via Ollama...")
-        enriched = self.enrich_leads(raw_leads)
+        for product in products:
+            product_name = product["name"]
+            intel = product.get("intel", {})
+            keywords = intel.get("keywords", [])
+            business_type = intel.get("business_type", "SaaS")
+            
+            if not keywords:
+                print(f"  ⚠️  No intelligence keywords found for {product_name} — using defaults")
+                keywords = [f"{business_type} India", "SMB software Bengaluru"]
+
+            update_live_status("leads", task=f"Initiating Google Maps Scrape for {product_name}", progress=20)
+            
+            raw_leads = []
+            for i, kw in enumerate(keywords[:2]):  # Use top 2 keywords
+                update_live_status("leads", task=f"Hunting niche: {kw} (Sector {i+1}/2)", progress=30 + (i * 20))
+                print(f"    - Scraping niche: {kw}...")
+                raw_leads.extend(self.scrape_google_maps(kw, limit=10))
+            
+            update_live_status("leads", task=f"Cognitive Enrichment: Sorting {len(raw_leads)} potential fits", progress=75)
+            print(f"  🤖 Enriching {len(raw_leads)} leads for {product_name}...")
+            enriched = self.enrich_leads(raw_leads, product_name)
+            all_enriched.extend(enriched)
+            
+            # Save product-specific Excel
+            update_live_status("leads", task="Exporting Prospect Matrix to Excel", progress=90)
+            self.save_to_excel(product["id"], enriched)
+
+        update_live_status("leads", task=f"Syncing {len(all_enriched)} qualified leads to EZ-Connect CRM", progress=95)
+        print(f"  📤 Pushing total {len(all_enriched)} leads to EZ-Connect CRM...")
+        self.push_to_crm(all_enriched)
         
-        print(f"  📤 Pushing to EZ-Connect CRM...")
-        self.push_to_crm(enriched)
-        
-        return enriched
+        return all_enriched
     
-    def scrape_google_maps(self) -> list:
+    def scrape_google_maps(self, query: str, limit: int = 10) -> list:
         """Scrape Google Maps via Apify"""
-        if not self.apify_token:
-            print("  ⚠️  APIFY_TOKEN not set — using mock data")
+        if not self.apify_token or "your_" in self.apify_token:
             return self.mock_leads()
         
-        # Apify Google Maps Scraper
-        categories = [
-            "restaurants in Bengaluru",
-            "grocery stores in Bengaluru",
-            "wholesale traders in Bengaluru",
-            "medical shops in Bengaluru"
-        ]
-        
-        all_leads = []
-        for category in categories:
-            leads = self.run_apify_actor(category, max_results=30)
-            all_leads.extend(leads)
-        
-        return all_leads
+        # Target specific volume per run
+        return self.run_apify_actor(f"{query} in Bengaluru", max_results=limit)
     
     def run_apify_actor(self, query: str, max_results: int = 30) -> list:
         try:
@@ -88,44 +96,76 @@ class LeadGenAgent:
             print(f"  ⚠️  Apify scrape failed: {e}")
             return []
     
-    def enrich_leads(self, raw_leads: list) -> list:
+    def enrich_leads(self, raw_leads: list, product_name: str) -> list:
         """Use Ollama to enrich and qualify leads"""
         enriched = []
+        seen = set()
         
-        for lead in raw_leads[:50]:  # cap at 50 to save RAM
+        for lead in raw_leads:
             name = lead.get("title") or lead.get("name", "")
-            category = lead.get("categoryName") or lead.get("category", "")
+            if not name or name in seen:
+                continue
+            
+            seen.add(name)
             phone = lead.get("phone", "")
             address = lead.get("address", "")
             
-            if not name:
-                continue
+            fit = self.determine_product_fit(lead.get("categoryName", ""))
             
-            # Determine product fit
-            product_fit = self.determine_product_fit(category)
-            
+            # Precise Category Filtering
+            p_name = product_name.lower()
+            if "dine" in p_name:
+                if fit != "ezdine": continue
+            else:
+                if fit == "ezdine": continue
+
             enriched.append({
                 "name": name,
-                "category": category,
+                "category": lead.get("categoryName", ""),
                 "phone": phone,
                 "address": address,
                 "city": "Bengaluru",
-                "product_fit": product_fit,
+                "product_fit": product_name,
                 "source": "google_maps_apify",
                 "scraped_at": datetime.utcnow().isoformat(),
                 "status": "new"
             })
         
         return enriched
+
+    def save_to_excel(self, product_id: str, leads: list):
+        """Saves leads to product-specific Excel files"""
+        if not leads: return
+        
+        file_path = "leads.xlsx"
+        print(f"    - Exporting {len(leads)} leads to {file_path}...")
+        
+        try:
+            df = pd.DataFrame(leads)
+            
+            # Use ExcelWriter to handle multiple sheets or multiple files
+            # For simplicity, we'll use a product-specific file
+            product_file = f"leads_{product_id}.xlsx"
+            df.to_excel(product_file, index=False)
+            print(f"    ✅ Export complete: {product_file}")
+            
+            # Also append to master list
+            if os.path.exists(file_path):
+                master_df = pd.read_excel(file_path)
+                master_df = pd.concat([master_df, df]).drop_duplicates(subset=["name", "phone"])
+                master_df.to_excel(file_path, index=False)
+            else:
+                df.to_excel(file_path, index=False)
+
+        except Exception as e:
+            print(f"    ⚠️  Excel export failed: {e}")
     
     def determine_product_fit(self, category: str) -> str:
-        category_lower = category.lower()
-        if any(k in category_lower for k in ["restaurant", "cafe", "hotel", "food", "bar", "dine"]):
+        cat = (category or "").lower()
+        # High-perfection restaurant keyword detection
+        food_list = ["restaurant", "cafe", "hotel", "food", "bar", "dine", "kitchen", "bakery", "sweet", "catering", "dining"]
+        if any(f in cat for f in food_list):
             return "ezdine"
-        elif any(k in category_lower for k in ["wholesale", "trader", "distributor", "manufacturer"]):
-            return "ezbillify"
-        elif any(k in category_lower for k in ["grocery", "medical", "pharmacy", "retail", "shop", "store"]):
-            return "ezbillify"
         return "ezbillify"
     
     def push_to_crm(self, leads: list):
@@ -146,9 +186,11 @@ class LeadGenAgent:
             print(f"  ⚠️  CRM push failed: {e}")
     
     def mock_leads(self) -> list:
-        """Mock data when Apify is not configured"""
+        """Expanded mock data for verification when Apify is offline"""
         return [
-            {"title": "Sri Venkatesh Traders", "categoryName": "Wholesale", "phone": "+91 9876543210", "address": "Shivajinagar, Bengaluru"},
-            {"title": "Namma Darshini", "categoryName": "Restaurant", "phone": "+91 9876543211", "address": "Jayanagar, Bengaluru"},
-            {"title": "Fresh Basket Mart", "categoryName": "Grocery Store", "phone": "+91 9876543212", "address": "Indiranagar, Bengaluru"},
+            {"title": f"Bengaluru Retailer {i}", "categoryName": "Wholesale" if i % 2 == 0 else "Grocery Store", "phone": f"+91 90000000{i:02d}", "address": "Jayanagar, Bengaluru"}
+            for i in range(20)
+        ] + [
+            {"title": f"Namma Cafe {i}", "categoryName": "Restaurant", "phone": f"+91 90000100{i:02d}", "address": "Indiranagar, Bengaluru"}
+            for i in range(10)
         ]
