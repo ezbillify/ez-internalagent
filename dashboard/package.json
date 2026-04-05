@@ -1,5 +1,5 @@
 {
-  "name": "ez-agent-hub",
+  "name": "ez-internalagent",
   "version": "1.0.0",
   "description": "EZ Internal Agent Command Center",
   "private": true,
