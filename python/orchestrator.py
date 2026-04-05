@@ -6,15 +6,33 @@ import tempfile
 from datetime import datetime
 from fastapi import FastAPI, BackgroundTasks, HTTPException
 from pydantic import BaseModel
-from crewai import Agent, Task, Crew, Process
-from langchain_ollama import OllamaLLM
-from crewai_tools import SerperDevTool
+
+try:
+    from crewai import Agent, Task, Crew, Process
+    from langchain_ollama import OllamaLLM
+    from crewai_tools import SerperDevTool
+    CREW_READY = True
+except ImportError:
+    print("⚠️ CrewAI or LangChain dependencies missing. Orchestrator running in limited mode.")
+    CREW_READY = False
+    # Mock classes to prevent NameError
+    class Agent:
+        def __init__(self, **kwargs): pass
+    class Task:
+        def __init__(self, **kwargs): pass
+    class Crew:
+        def __init__(self, **kwargs): pass
+    class Process: pass
+    class OllamaLLM:
+        def __init__(self, **kwargs): pass
+    class SerperDevTool:
+        def __init__(self, **kwargs): pass
+
 from dotenv import load_dotenv
 
 # 🌍 LOAD ENVIRONMENT
 # Path assuming we run from root or python directory
-load_dotenv(".env")
-load_dotenv("../.env")
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), "config", ".env"), override=True)
 
 # 🌐 INITIALIZE FASTAPI (Phase 1)
 app = FastAPI(title="EZ Research-to-Sales Orchestrator")
@@ -26,8 +44,12 @@ class InitializationRequest(BaseModel):
 
 # 🧠 CONFIGURE MODELS (Local Ollama)
 # Qwen for Technical Analysis, Llama 3 for Market Research
-tech_llm = OllamaLLM(model="qwen2.5-coder:7b", base_url="http://localhost:11434")
-market_llm = OllamaLLM(model="llama3.1:8b", base_url="http://localhost:11434")
+if CREW_READY:
+    tech_llm = OllamaLLM(model="qwen2.5-coder:7b", base_url="http://localhost:11434")
+    market_llm = OllamaLLM(model="llama3.1:8b", base_url="http://localhost:11434")
+else:
+    tech_llm = None
+    market_llm = None
 
 # 🛠 TOOLS
 search_tool = SerperDevTool()

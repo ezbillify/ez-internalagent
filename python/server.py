@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import asyncio
 from fastapi import FastAPI, BackgroundTasks, HTTPException
@@ -13,7 +14,7 @@ load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"), ov
 
 from agents.research_agent import ResearchAgent
 from agents.lead_gen_agent import LeadGenAgent
-from utils.product_registry import register_product, get_product
+from utils.product_registry import register_product, get_product, load_products
 from utils.telemetry import update_live_status
 
 app = FastAPI(title="EZ Internal Agent Backend")
@@ -28,6 +29,9 @@ app.add_middleware(
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5-coder:7b")
+OLLAMA_RESEARCH_MODEL = os.getenv("OLLAMA_RESEARCH_MODEL", "llama3.1:8b")
+OLLAMA_EDGE_MODEL = os.getenv("OLLAMA_EDGE_MODEL", "llama3.2:3b")
+
 STATUS_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "dashboard", "data", "live_status.json")
 
 class ResearchRequest(BaseModel):
@@ -55,7 +59,7 @@ async def run_deep_research(req: ResearchRequest):
     update_live_status("leads", "idle", "Awaiting research pulse...", progress=0)
     update_live_status("research", "running", f"Analyzing {req.github_url}...", progress=10, active_product=product_id)
     
-    agent = ResearchAgent(OLLAMA_URL, OLLAMA_MODEL)
+    agent = ResearchAgent(OLLAMA_URL, OLLAMA_RESEARCH_MODEL)
     product = get_product(product_id)
     
     try:
@@ -69,7 +73,7 @@ async def run_deep_research(req: ResearchRequest):
         # Step 2: Handoff to Lead Gen
         update_live_status("research", task="Market Analysis Complete. Launching Autonomous Leads Fleet...", progress=80)
         
-        lead_agent = LeadGenAgent(OLLAMA_URL, OLLAMA_MODEL)
+        lead_agent = LeadGenAgent(OLLAMA_URL, OLLAMA_EDGE_MODEL)
         update_live_status("leads", "running", f"Scraping niche markets for {product['name']}...", progress=10)
         
         # Run lead gen
@@ -85,6 +89,53 @@ async def run_deep_research(req: ResearchRequest):
 async def analyze_product(req: ResearchRequest, background_tasks: BackgroundTasks):
     background_tasks.add_task(run_deep_research, req)
     return {"status": "started", "product_id": req.github_url.split("/")[-1].replace(".git", "")}
+
+# ==========================================
+# GITHUB WEBHOOK ORCHESTRATOR
+# ==========================================
+from fastapi import Request
+import subprocess
+
+@app.post("/webhook/github")
+async def github_webhook(request: Request, background_tasks: BackgroundTasks):
+    # Parse the GitHub webhook payload
+    payload = await request.json()
+    
+    # We only care about push events
+    if "commits" not in payload:
+        return {"status": "ignored", "reason": "not a push event"}
+    
+    repo_url = payload["repository"]["clone_url"] # e.g. https://github.com/ezbillify/ezbillify-v2.git
+    commit_sha = payload["after"]
+    branch = payload["ref"].split("/")[-1]
+    
+    # 1. Find if this repo is registered in our Fleet products.json
+    products = load_products()
+    matched_product = next((p for p in products if p.get("repo") == repo_url), None)
+    
+    if not matched_product:
+        return {"status": "ignored", "reason": f"repo {repo_url} not registered in fleet"}
+        
+    product_id = matched_product["id"]
+    
+    # 2. Trigger the QA Agent to test the new code commit
+    # We run it via subprocess to keep it isolated, or could import it
+    background_tasks.add_task(run_qa_subprocess, product_id, commit_sha, branch)
+    
+    # 3. Trigger the Research -> Sales Pipeline to analyze the new code logic and find related leads
+    req = ResearchRequest(github_url=repo_url, product_name=matched_product["name"])
+    background_tasks.add_task(run_deep_research, req)
+    
+    return {"status": "deployed", "product": product_id, "commit": commit_sha}
+
+def run_qa_subprocess(product_id, commit_sha, branch):
+    agent_script = os.path.join(os.path.dirname(__file__), "agent.py")
+    subprocess.Popen([
+        sys.executable, agent_script, "qa", 
+        "--product", product_id, 
+        "--commit", commit_sha, 
+        "--branch", branch
+    ])
 
 @app.get("/status")
 async def get_system_status():

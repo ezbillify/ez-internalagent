@@ -7,6 +7,7 @@ import subprocess
 import os
 import json
 import glob
+from typing import Optional
 
 def run_maestro(product: dict, flows: list) -> dict:
     """Run all Maestro flows for a product"""
@@ -92,7 +93,7 @@ def run_single_flow(flow_file: str, device: str, product: dict) -> dict:
         return {"passed": False, "error": "Maestro CLI not found. Run: curl -Ls 'https://get.maestro.mobile.dev' | bash"}
 
 
-def get_connected_device(platform: str) -> str | None:
+def get_connected_device(platform: str) -> Optional[str]:
     """Get connected device ID"""
     
     if platform == "android":
@@ -112,7 +113,7 @@ def get_connected_device(platform: str) -> str | None:
     return None
 
 
-def find_screenshot(output_dir: str, flow_file: str) -> str | None:
+def find_screenshot(output_dir: str, flow_file: str) -> Optional[str]:
     flow_name = os.path.basename(flow_file).replace(".yaml", "")
     pattern = f"{output_dir}/**/*{flow_name}*.png"
     files = glob.glob(pattern, recursive=True)

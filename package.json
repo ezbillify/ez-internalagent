@@ -1,0 +1,10 @@
+{
+    "name": "ez-internal-agent-root",
+    "version": "1.0.0",
+    "description": "Root orchestrator for EZ Internal Agent fleet",
+    "private": true,
+    "scripts": {
+        "dev": "npm --prefix dashboard run dev",
+        "start": "bash scripts/start_all.sh"
+    }
+}

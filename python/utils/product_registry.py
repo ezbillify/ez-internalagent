@@ -5,6 +5,7 @@ Manages all registered products — add new repos without touching code
 
 import os
 import json
+from typing import Optional
 
 REGISTRY_PATH = os.getenv("REGISTRY_PATH", os.path.join(os.path.dirname(__file__), "../../config/products.json"))
 
@@ -14,7 +15,7 @@ def load_products() -> list:
     with open(REGISTRY_PATH, "r") as f:
         return json.load(f).get("products", [])
 
-def get_product(product_id: str) -> dict | None:
+def get_product(product_id: str) -> Optional[dict]:
     products = load_products()
     return next((p for p in products if p["id"] == product_id), None)
 

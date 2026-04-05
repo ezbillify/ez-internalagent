@@ -44,17 +44,18 @@ Here is the git diff showing recent code changes:
 
 Changed screens/files detected: {', '.join(screens) if screens else 'general changes'}
 
-Generate Maestro YAML test flows that test the user-facing changes in this diff.
-Rules:
-- Generate 2-4 focused test flows
-- Cover happy path and one edge case per flow
-- Use tapOn, assertVisible, inputText, scrollUntilVisible commands
-- Each flow must start with appId and launch the app
-- Test credentials are pre-seeded in test environment
-- Output ONLY valid YAML, no explanations
-- Separate each flow with ---FLOW_SEPARATOR---
+Generate Maestro YAML test flows that deeply test the user-facing changes in this diff.
+Rules for high-quality testing:
+1. Generate 2 to 4 focused test flows.
+2. Ensure you cover the happy path AND at least one negative/edge case (e.g., submitting empty forms, invalid data).
+3. Use robust selectors: prefer text matching or accessibility labels over brittle layout paths.
+4. Use standard commands: tapOn, assertVisible, inputText, scrollUntilVisible, swipe.
+5. Each flow MUST start with `appId` and launch the app.
+6. Assume test credentials are authenticated or accessible on the login screen.
+7. Output ONLY valid YAML. Do not include markdown blocks or explanations.
+8. Separate each independent flow with exactly ---FLOW_SEPARATOR---
 
-Example format:
+Example structure:
 appId: {app_id}
 ---
 - launchApp
@@ -62,6 +63,7 @@ appId: {app_id}
 - inputText:
     id: "email"
     text: "{test_email}"
+- assertVisible: "Dashboard"
 """
 
     raw = call_ollama(prompt, ollama_url, model)
@@ -98,16 +100,16 @@ Here is the git diff showing recent code changes:
 Changed pages/components detected: {', '.join(screens) if screens else 'general changes'}
 
 Generate Playwright TypeScript test files for the user-facing changes in this diff.
-Rules:
-- Generate 2-3 focused test files
-- Use page.goto(), page.fill(), page.click(), page.waitForSelector(), expect()
-- Login flow: go to /login, fill email + password, click submit
-- Cover happy path and one edge case
-- Output ONLY valid TypeScript, no explanations
-- Import from @playwright/test
-- Separate each test file with ---TEST_SEPARATOR---
+Rules for Enterprise Grade Testing:
+1. Generate 2 to 3 distinct test files.
+2. Use robust locators: prefer `getByRole`, `getByTestId`, or `getByLabel` over brittle CSS/XPath.
+3. Test the happy path and critical boundary/edge conditions.
+4. Ensure all asynchronous actions are properly awaited (e.g., `page.waitForURL`, `expect(page.getByRole(...)).toBeVisible()`).
+5. Output ONLY valid TypeScript code, no markdown blocks, no explanations.
+6. Every file must import {{ test, expect }} from '@playwright/test'.
+7. Separate each test file with exactly ---TEST_SEPARATOR---
 
-Example format:
+Example structure:
 import {{ test, expect }} from '@playwright/test';
 
 test.describe('{product_name} — Invoice', () => {{

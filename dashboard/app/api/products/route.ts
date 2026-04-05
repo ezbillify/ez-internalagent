@@ -21,15 +21,16 @@ export async function POST(req: Request) {
   try {
     const newProduct = await req.json();
     const filePath = getProductsPath();
-    
+
     let data: any = { products: [] };
     if (fs.existsSync(filePath)) {
       data = JSON.parse(fs.readFileSync(filePath, "utf-8"));
     }
-    
+
+    data.products = data.products.filter((p: any) => p.id !== newProduct.id);
     data.products.push(newProduct);
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
-    
+
     return NextResponse.json({ success: true, product: newProduct });
   } catch (error) {
     return NextResponse.json({ error: "Failed to add product" }, { status: 500 });
@@ -47,9 +48,9 @@ export async function DELETE(req: Request) {
 
     const data = JSON.parse(fs.readFileSync(filePath, "utf-8"));
     data.products = data.products.filter((p: any) => p.id !== id);
-    
+
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
-    
+
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: "Failed to delete product" }, { status: 500 });

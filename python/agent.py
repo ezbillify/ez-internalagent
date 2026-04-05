@@ -26,6 +26,8 @@ from utils.product_registry import load_products, get_product
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5-coder:7b")
+OLLAMA_RESEARCH_MODEL = os.getenv("OLLAMA_RESEARCH_MODEL", "llama3.1:8b")
+OLLAMA_EDGE_MODEL = os.getenv("OLLAMA_EDGE_MODEL", "llama3.2:3b")
 STATUS_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "dashboard", "data", "live_status.json")
 
 def update_live_status(agent_id, status=None, task=None, increment_metric=None):
@@ -119,7 +121,7 @@ def run_research_agent(product_id: str = None):
     update_live_status("research", status="running", task="Starting market analysis...")
     print(f"\n🔬 EZ Research Agent starting...")
     from agents.research_agent import ResearchAgent
-    agent = ResearchAgent(OLLAMA_URL, OLLAMA_MODEL)
+    agent = ResearchAgent(OLLAMA_URL, OLLAMA_RESEARCH_MODEL)
     
     products = load_products()
     targets = [get_product(product_id)] if product_id else products
@@ -150,7 +152,7 @@ def run_lead_gen_agent(product_id: str = None):
     update_live_status("leads", status="running", task="Scraping new lead data...")
     print(f"\n🎯 EZ Lead Gen Agent starting...")
     from agents.lead_gen_agent import LeadGenAgent
-    agent = LeadGenAgent(OLLAMA_URL, OLLAMA_MODEL)
+    agent = LeadGenAgent(OLLAMA_URL, OLLAMA_EDGE_MODEL)
     
     products = load_products()
     targets = [get_product(product_id)] if product_id else products

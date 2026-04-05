@@ -12,7 +12,10 @@
       "id": "webhook-trigger",
       "name": "GitHub Webhook",
       "type": "n8n-nodes-base.webhook",
-      "position": [240, 300],
+      "position": [
+        240,
+        300
+      ],
       "webhookId": "ez-agent-webhook"
     },
     {
@@ -30,16 +33,22 @@
       "id": "if-main-branch",
       "name": "Main branch only?",
       "type": "n8n-nodes-base.if",
-      "position": [460, 300]
+      "position": [
+        460,
+        300
+      ]
     },
     {
       "parameters": {
-        "command": "cd /path/to/ez-internalagent && source .env && python python/agent.py qa --product={{ $json.body.product_id }} --commit={{ $json.body.head_commit.id }} --branch={{ $json.body.ref }}"
+        "command": "cd /Users/developeraccount/ez-internalagent && source config/.env && python3 python/agent.py qa --product={{ $json.body.product_id }} --commit={{ $json.body.head_commit.id }} --branch={{ $json.body.ref }}"
       },
       "id": "run-qa-agent",
       "name": "Run QA Agent",
       "type": "n8n-nodes-base.executeCommand",
-      "position": [680, 200]
+      "position": [
+        680,
+        200
+      ]
     },
     {
       "parameters": {
@@ -48,7 +57,9 @@
             {
               "field": "weeks",
               "weeksInterval": 1,
-              "triggerAtDay": [1],
+              "triggerAtDay": [
+                1
+              ],
               "triggerAtHour": 8,
               "triggerAtMinute": 0
             }
@@ -58,16 +69,22 @@
       "id": "weekly-research",
       "name": "Weekly Monday 8AM",
       "type": "n8n-nodes-base.scheduleTrigger",
-      "position": [240, 500]
+      "position": [
+        240,
+        500
+      ]
     },
     {
       "parameters": {
-        "command": "cd /path/to/ez-internalagent && source .env && python python/agent.py research"
+        "command": "cd /Users/developeraccount/ez-internalagent && source config/.env && python3 python/agent.py research"
       },
       "id": "run-research",
       "name": "Run Research Agent",
       "type": "n8n-nodes-base.executeCommand",
-      "position": [460, 500]
+      "position": [
+        460,
+        500
+      ]
     },
     {
       "parameters": {
@@ -85,16 +102,22 @@
       "id": "daily-leads",
       "name": "Daily 6AM",
       "type": "n8n-nodes-base.scheduleTrigger",
-      "position": [240, 700]
+      "position": [
+        240,
+        700
+      ]
     },
     {
       "parameters": {
-        "command": "cd /path/to/ez-internalagent && source .env && python python/agent.py leads"
+        "command": "cd /Users/developeraccount/ez-internalagent && source config/.env && python3 python/agent.py leads"
       },
       "id": "run-leads",
       "name": "Run Lead Gen Agent",
       "type": "n8n-nodes-base.executeCommand",
-      "position": [460, 700]
+      "position": [
+        460,
+        700
+      ]
     },
     {
       "parameters": {
@@ -105,7 +128,10 @@
       "id": "control-webhook",
       "name": "Dashboard Control API",
       "type": "n8n-nodes-base.webhook",
-      "position": [240, 900],
+      "position": [
+        240,
+        900
+      ],
       "notes": "Receives commands from EZ Agent Hub dashboard"
     },
     {
@@ -123,27 +149,68 @@
       "id": "if-pause",
       "name": "Kill switch?",
       "type": "n8n-nodes-base.if",
-      "position": [460, 900]
+      "position": [
+        460,
+        900
+      ]
     }
   ],
   "connections": {
     "GitHub Webhook": {
-      "main": [[{"node": "Main branch only?", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Main branch only?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Main branch only?": {
       "main": [
-        [{"node": "Run QA Agent", "type": "main", "index": 0}],
+        [
+          {
+            "node": "Run QA Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
         []
       ]
     },
     "Weekly Monday 8AM": {
-      "main": [[{"node": "Run Research Agent", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Run Research Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Daily 6AM": {
-      "main": [[{"node": "Run Lead Gen Agent", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Run Lead Gen Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Dashboard Control API": {
-      "main": [[{"node": "Kill switch?", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Kill switch?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
